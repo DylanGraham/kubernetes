@@ -46,6 +46,7 @@ import (
 	"k8s.io/apiserver/pkg/audit"
 	"k8s.io/apiserver/pkg/endpoints/handlers/negotiation"
 	"k8s.io/apiserver/pkg/endpoints/handlers/responsewriters"
+	"k8s.io/apiserver/pkg/endpoints/metrics"
 	"k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/registry/rest"
 	utiltrace "k8s.io/apiserver/pkg/util/trace"
@@ -212,7 +213,20 @@ func getRequestOptions(req *http.Request, scope RequestScope, into runtime.Objec
 		if isSubresource {
 			startingIndex = 3
 		}
-		newQuery[subpathKey] = []string{strings.Join(requestInfo.Parts[startingIndex:], "/")}
+
+		p := strings.Join(requestInfo.Parts[startingIndex:], "/")
+
+		// ensure non-empty subpaths correctly reflect a leading slash
+		if len(p) > 0 && !strings.HasPrefix(p, "/") {
+			p = "/" + p
+		}
+
+		// ensure subpaths correctly reflect the presence of a trailing slash on the original request
+		if strings.HasSuffix(requestInfo.Path, "/") && !strings.HasSuffix(p, "/") {
+			p += "/"
+		}
+
+		newQuery[subpathKey] = []string{p}
 		query = newQuery
 	}
 	return scope.ParameterCodec.DecodeParameters(query, scope.Kind.GroupVersion(), into)
@@ -248,12 +262,15 @@ func ConnectResource(connecter rest.Connecter, scope RequestScope, admit admissi
 				return
 			}
 		}
-		handler, err := connecter.Connect(ctx, name, opts, &responder{scope: scope, req: req, w: w})
-		if err != nil {
-			scope.err(err, w, req)
-			return
-		}
-		handler.ServeHTTP(w, req)
+		requestInfo, _ := request.RequestInfoFrom(ctx)
+		metrics.RecordLongRunning(req, requestInfo, func() {
+			handler, err := connecter.Connect(ctx, name, opts, &responder{scope: scope, req: req, w: w})
+			if err != nil {
+				scope.err(err, w, req)
+				return
+			}
+			handler.ServeHTTP(w, req)
+		})
 	}
 }
 
@@ -353,7 +370,10 @@ func ListResource(r rest.Lister, rw rest.Watcher, scope RequestScope, forceWatch
 				scope.err(err, w, req)
 				return
 			}
-			serveWatch(watcher, scope, req, w, timeout)
+			requestInfo, _ := request.RequestInfoFrom(ctx)
+			metrics.RecordLongRunning(req, requestInfo, func() {
+				serveWatch(watcher, scope, req, w, timeout)
+			})
 			return
 		}
 

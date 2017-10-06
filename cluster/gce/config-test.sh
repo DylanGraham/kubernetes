@@ -143,7 +143,7 @@ ENABLE_METRICS_SERVER="${KUBE_ENABLE_METRICS_SERVER:-true}"
 # Useful for scheduling heapster in large clusters with nodes of small size.
 HEAPSTER_MACHINE_TYPE="${HEAPSTER_MACHINE_TYPE:-}"
 
-# Set etcd image (e.g. 3.0.17-alpha.1) and version (e.g. 3.0.17) if you need
+# Set etcd image (e.g. gcr.io/google_containers/etcd) and version (e.g. 3.1.10) if you need
 # non-default version.
 ETCD_IMAGE="${TEST_ETCD_IMAGE:-}"
 ETCD_VERSION="${TEST_ETCD_VERSION:-}"
@@ -341,8 +341,9 @@ SOFTLOCKUP_PANIC="${SOFTLOCKUP_PANIC:-true}" # true, false
 
 # Enable a simple "AdvancedAuditing" setup for testing.
 ENABLE_APISERVER_ADVANCED_AUDIT="${ENABLE_APISERVER_ADVANCED_AUDIT:-true}" # true, false
-if [[ "${ENABLE_APISERVER_ADVANCED_AUDIT}" == "true" ]]; then
-  FEATURE_GATES="${FEATURE_GATES},AdvancedAuditing=true"
+
+if [[ "${ENABLE_APISERVER_BASIC_AUDIT:-}" == "true" ]]; then
+  echo "Warning: Basic audit logging is deprecated and will be removed. Please use advanced auditing instead."
 fi
 
 ENABLE_BIG_CLUSTER_SUBNETS="${ENABLE_BIG_CLUSTER_SUBNETS:-false}"
@@ -388,3 +389,7 @@ fi
 
 # Optional: enable certificate rotation of the kubelet certificates.
 ROTATE_CERTIFICATES="${ROTATE_CERTIFICATES:-}"
+
+# The number of services that are allowed to sync concurrently. Will be passed
+# into kube-controller-manager via `--concurrent-service-syncs`
+CONCURRENT_SERVICE_SYNCS="${CONCURRENT_SERVICE_SYNCS:-}"

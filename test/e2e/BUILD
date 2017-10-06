@@ -28,13 +28,13 @@ go_test(
         "//test/e2e/scheduling:go_default_library",
         "//test/e2e/servicecatalog:go_default_library",
         "//test/e2e/storage:go_default_library",
+        "//test/e2e/ui:go_default_library",
     ],
 )
 
 go_library(
     name = "go_default_library",
     srcs = [
-        "dashboard.go",
         "e2e.go",
         "events.go",
         "example_cluster_dns.go",
@@ -51,6 +51,7 @@ go_library(
         "ubernetes_lite.go",
     ],
     deps = [
+        "//federation/test/e2e:go_default_library",
         "//pkg/api:go_default_library",
         "//pkg/api/testapi:go_default_library",
         "//pkg/api/v1/pod:go_default_library",
@@ -66,7 +67,6 @@ go_library(
         "//test/e2e/framework/metrics:go_default_library",
         "//test/e2e/generated:go_default_library",
         "//test/e2e/manifest:go_default_library",
-        "//test/e2e_federation:go_default_library",
         "//test/utils:go_default_library",
         "//test/utils/image:go_default_library",
         "//vendor/github.com/golang/glog:go_default_library",
@@ -137,6 +137,7 @@ filegroup(
         "//test/e2e/servicecatalog:all-srcs",
         "//test/e2e/storage:all-srcs",
         "//test/e2e/testing-manifests:all-srcs",
+        "//test/e2e/ui:all-srcs",
         "//test/e2e/upgrades:all-srcs",
     ],
     tags = ["automanaged"],
